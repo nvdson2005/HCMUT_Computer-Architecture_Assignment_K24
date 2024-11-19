@@ -1,43 +1,77 @@
+.data
+	#Necessary data goes here
 .text
-#Read input from .BIN file
-
-readinput:
+.globl main
+	#Read input from .BIN file
+read_input:
 
 main:
+##########################################################
 	#Additional information:
-		#t2 is used to store the sign of the result
-		#Because the input is 32 bit but it is extended to 64 bit, 
+		#t0 is used to count the loop time (when applying the multiplication algorithm)
+		#in the multiplication function.
+		
+		#t2 is used to store the sign of the result.
+		
+		#Because the input is 32 bit but it is extended to 64 bit, the a1 is used as the multiplicand parameter,
+		#then it is extended to 64 bit by connecting with a0 register.
+		
+		#The a2 register is used as the multiplier.
+		
 		#Because the final result is 64 bits, we use v0 as the MSB and v1 as the LSB
-	#Read input then move the values into a0 and a1, the parameters for the function
+###########################################################
+	#Read input then move the values into a1 and a2, the parameters for the function
 	li $v0 5
 	syscall
-	move $a0 $v0			#a0 is multiplicand
+	move $a1 $v0			#a1 is multiplicand
 	li $v0 5
 	syscall
-	move $a1 $v0			#a1 is multiplier
+	move $a2 $v0			#a2 is multiplier
+	###################################################
+	#SET SOME INITIAL STATES BEFORE CALLING THE FUNCTION
+	###################################################
+	li $a0 0 			#As the multiplicand is 32 bit initially, we assume that the upper 32 bit is 0, no matter
+					#what the sign of the multiplicand is.
+					
+	########################################################
+	#Store the old value of s registers into stack (If used)
+	#Or load inital value for some registers
+	li $t2 0			#Set the initial value for sign indicator register
+	
+	
+	########################################################
 	#Call and jump to the function
 	jal multiplication
+	#######################################################
+	#After returning back from the function, jump to exit to terminate the program
 	j exit
+##################################
 #The main multiplication function
+##################################
 multiplication:
-	#Check the sign of two numbers
-a0_sign_check:
-	blt $a0 $zero negative_check_a0
-	j a1_sign_check
+#######################################
+#Check the sign of two numbers
+#Description: Use t2 resgister as an sign indicator. If t2 equals to 1, it indicates that the sign is changed 
 a1_sign_check:
-	blt $a1 $zero negative_check_a1
+	blt $a1 $zero a1_sign_change	#Check if multiplicand is less than zero
+					#If true, branch to the tag to change its sign
+	j a2_sign_check			#If false, check the sign of multiplier
+a2_sign_check:
+	blt $a2 $zero a2_sign_change
 	j multiplication_cont
-#The tag to check sign of a0
-negative_check_a0:
-	subu $a0 $zero $a0 		#Assign a0 with 0 - a0 to change the sign
-	xori $t2 1			#Use xori to change t2, indicating that the sign is changed
-	j a1_sign_check			#Go back to check the a1's sign
+########################################
+a1_sign_change:				
+	subu $a1 $zero $a0 		#Assign a1 with 0 - a1 to change the sign
+	xori $t2 1			#Use xori to change t2, indicating that the sign is changed. This is equal to NOT
+	j a2_sign_check			#Go back to check the sign of multiplier
 #The tag to check sign of a1
-negative_check_a1:
-	subu $a1 $zero $a1 		#Assign a0 with 0 - a0 to change the sign
-	xori $t2 1			#Use xori to change t2, indicating that the sign is changed
+a2_sign_change:
+	subu $a2 $zero $a1 		#Assign a2 with 0 - a2 to change the sign
+	xori $t2 1			#Use xori to change t2, indicating that the sign is changed. This is equal to NOT
 	j multiplication_cont		#Go back to check the a1's sign
-#Continue the mulplication
+########################################
+#End of checking sign
+########################################
 multiplication_cont:
 	#After check sign, crreate a loop to implement multiplication algorithm
 	li $t0 0 			#t0 is used to count loops
