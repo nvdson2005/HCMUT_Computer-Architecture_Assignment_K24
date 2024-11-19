@@ -32,7 +32,8 @@ new_line: .asciiz "\n"
 #These strings are used to provide information when printing out the result
 lower_part_result: .asciiz "The lower part of the result is: "
 higher_part_result: .asciiz "The higher part of the result is: "
-
+binary_result: .asciiz "Result in binary: "
+hexa_result: .asciiz "Result in hexadecimal: "
 ###########################################################
 ######			###			###########
 #START			THE 			PROGRAM  ##
@@ -314,28 +315,51 @@ exit:
 	move $s0 $v0		#The higher part is stored in s0
 	move $s1 $v1		#The lower part is stored in s1
 	
-	#Syscall 1 to print out the lower part
+	#Print out the lower part in decimal
 	la $a0 lower_part_result
 	li $v0 4
 	syscall
 	li $v0 1		#Set v0 as 1 for printing integers (signed)
 	move $a0 $s1		#Move the lower part of result into a0
 	syscall			#Print out
-	la $a0 new_line
-	li $v0 4
+	la $a0 new_line		#Begin a new line
+	li $v0 4		#Syscall 4 to print out a string
 	syscall
 	
-	#Syscall 1 again to print out the higher part 
+	#Print out the higher part in decimal 
 	la $a0 higher_part_result
 	li $v0 4
 	syscall
 	li $v0 1		#Set v0 as 1 for printing integers (signed)
 	move $a0 $s0		#Move the upper part of result into a0
 	syscall			#Print out.
-	la $a0 new_line
-	li $v0 4
+	la $a0 new_line		#Begin a new line
+	li $v0 4		#Syscall 4 to print out a string
 	syscall
 	
+	#Print out the result in binary form
+	la $a0 binary_result	
+	li $v0 4
+	syscall
+	li $v0 35		#Syscall 35 to print the result in binary
+	move $a0 $s0		#move s0 to a0 to print out the higher part 
+	syscall			
+	move $a0 $s1		#Move s1 to a0 to print out the lower part
+	syscall
+	la $a0 new_line		#Begin a new line
+	li $v0 4		#Syscall 4 to print out a string
+	syscall
+	
+	#Print out the result in hexadecimal form
+	la $a0 hexa_result
+	li $v0 4
+	syscall
+	li $v0 34		#Syscall 34 to print out the result in hexedecimal
+	move $a0 $s0		#Move s0 to a0 to print out the higher part
+	syscall		
+	move $a0 $s1		#Move s1 to a0 to print out the lower part
+	syscall
+
 	#Syscall 10 to terminate execution
 	li $v0 10		#Set the v0 register to 10 to set up for exit syscall
 	syscall			#Call the syscall to terminate execution
