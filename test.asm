@@ -12,10 +12,10 @@ srl $t3 $t1 31
 andi $t3 $t3 1 #Make sure that we only take the last bit
 #Shift left lower part
 sll $t1 $t1 1
-#Add the MSB of lower part to LSB part of upper part
-or $t0 $t0 $t3
 #Shift left the upper part
 sll $t0 $t0 1
+#Add the MSB of lower part to LSB part of upper part
+or $t0 $t0 $t3
 #Print out the number after every shift time
 move $a0 $t0
 li $v0 1

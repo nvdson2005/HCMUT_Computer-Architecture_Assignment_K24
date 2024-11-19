@@ -2,9 +2,25 @@
 #DATA DEFINITION
 ##########################################################
 .data
-	#Necessary data goes here
+#Necessary data goes here
 ##########################################################
+#Below is the buffer that is used to store the information from binary file INT2.BIN
+binary_buffer:  .align 2	#Align the space to the word boundary (2^2 = 4 bytes)
+				#So that the address of the file byte is
+				#divisible by 4, allowing
+				#load word from the space.
+		.space 8	#The space is 8 bytes long,
+				#in order to store enough space for
+				#two 32-bit integers.
+
+#Below are strings that are used for getting input from binary file
+filename: .asciiz "INT2.BIN"	#Name of the file that will be read
+
 #Below are strings that are used for printing information.
+
+#Thse are strings that provide information about the values of multiplicand and multiplier from binary file
+multiplicand_input_information: .asciiz "The multiplicand from binary file is: "
+multiplier_input_information: .asciiz "The multiplier from binary file is: "
 
 #These are only temporary: As we will not get input from keyboard but from binary file
 multiplicand_input_notification: .asciiz "Type in the multiplicand: "	#Multiplicand input notification
@@ -44,32 +60,78 @@ main:
 		
 		#The result after returning from the function is in v0 and v1 (higher and lower part respectively).
 		#However, for using syscall, we move it to s0 and s1 respectively to store the result
-###########################################################
+##########################################################
 #Read input then move the values into a1 and a2,
 #the parameters for the function
-	
-	#Get input for multiplicand
-	la $a0 multiplicand_input_notification
+##########################################################
+#Get input from binary file INT2.BIN
+###############################
+#Open file INT2.BIN
+	li $v0 13	#Syscall 13 to open file.
+	la $a0 filename	#a0 stores the name of the binary file
+	li $a1 0	#Set the open file mode to: Read only
+	li $a2 0	#Set the flag to: Normal
+	syscall		#After syscall, the file descriptor is stored in v0 register
+	move $s2 $v0	#Move the file descriptor from v0 to s2 (This is used to
+			#close the file later
+#End of open file INT2.BIN
+################################
+#Read 8 bytes from the file
+	li $v0 14		#Syscall 14 to read from file	
+	move $a0 $s2		#a0 stores the file descriptor
+				#of the file we are going to read
+	la $a1 binary_buffer	#a1 stores the space we store the information
+				#that is read from file
+	la $a2 8		#a2 stores the number of bytes we are
+				#going to read
+	syscall			#8 bytes are read and stored in binary_buffer
+#End of read file to space
+#################################
+#Close binary file INT2.BIN
+li $v0 16			#Syscall 16 to close the file
+move $a0 $s2 			#a0 stores the file descriptor of closed file
+syscall
+#End of closing binary file INT2.BIN
+#################################
+#Assign the values from space into registers
+	la $t3 binary_buffer 	#t3 stores the array the information is in
+	lw $a1 0($t3)		#Store the first number (multiplicand also)
+				#into the first parameter a1
+	lw $a2 4($t3)		#Store the second number (multiplier also)
+				#into the second parameter a2
+#End of assigning value into registers
+##################################
+#Print out the values of multiplicand and multiplier
+	#Print out the multiplicand information
+	la $a0 multiplicand_input_information	#Load multiplicand information
 	li $v0 4
 	syscall
-	li $v0 5			#Set v0 to 5 to ready for the input syscall
-	syscall				#Input syscall called
-	move $a1 $v0			#Move the multiplicand to a1
+	move $a0 $a1		#a0 stores the printed integer
+	li $v0 1		#Syscall 1 to print integer
+	syscall
+	
+	#Begin a new line
 	la $a0 new_line
 	li $v0 4
 	syscall
 	
-	#Get input for multiplier
-	la $a0 multiplier_input_notification
-	li $v0 4
-	syscall
-	li $v0 5			#Set v0 to 5 to ready for the input syscall again 
-	syscall				#Input syscall called
-	move $a2 $v0			#a2 is multiplier
-	la $a0 new_line
+	#Print out the multiplier information
+	la $a0 multiplier_input_information
 	li $v0 4
 	syscall
 	
+	move $a0 $a2
+	li $v0 1
+	syscall
+	
+	#Begin a new line
+	la $a0 new_line
+	li $v0 4
+	syscall
+#End of values printing
+#################################
+#End of binary file from INT2.BIN
+##########################################################
 	###################################################
 	#SET SOME INITIAL STATES BEFORE CALLING THE FUNCTION
 	###################################################
@@ -77,13 +139,13 @@ main:
 					#that the upper 32 bit is 0, no matter
 					#what the sign of the multiplicand is.
 					#Also reset a0 after syscall
-					
+	li $s2 0		
 	########################################################
 	#Store the old value of s registers into stack (If used)
 	#Or load inital value for some registers
 	li $t2 0			#Set the initial value for sign indicator register
 	li $v0 0			#Reset after syscall
-	
+	li $t3 0
 	########################################################
 	#Call and jump to the function
 	jal multiplication
