@@ -24,9 +24,6 @@ This repository includes:
   
 # Todo
 
-Read input from binary file.
-
-
 # References
 
 Textbook: Computer Organization and Design (4th Edition).
