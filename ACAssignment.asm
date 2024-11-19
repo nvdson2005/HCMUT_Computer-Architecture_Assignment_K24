@@ -95,6 +95,31 @@ main:
 ##################################
 multiplication:
 #######################################
+#Before enter: check edge case: either multiplicand or multiplier equals to 0
+	#Branch to the handler if multiplicand or 
+	#multiplier equals to 0 
+	beq $a1 0 zero_operand_handler
+	beq $a2 0 zero_operand_handler
+	
+	#If not, continue to check the sign 
+	#of 2 operands 
+	j a1_sign_check	
+
+##########################
+#Handle the zero edge case
+zero_operand_handler:
+	#Load both v0 and v1 to zero
+	li $v0 0
+	li $v1 0
+	
+	#Immediately return and go 
+	#out of the function
+	j function_return
+#End of zero edge case handler
+##########################
+
+#End of edge case check
+#######################################
 #Check the sign of two numbers
 #Description: Use t2 resgister as an sign indicator. If t2 equals to 1, it indicates that the sign is changed 
 a1_sign_check:
