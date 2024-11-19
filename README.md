@@ -8,7 +8,6 @@ Implement the multiplication algorithm (Figure 3.4 or 3.5 in textbook) for two 3
 
 Read input from binary file.
 
-Convert 64-bit binary result into integers.
 
 # References
 
