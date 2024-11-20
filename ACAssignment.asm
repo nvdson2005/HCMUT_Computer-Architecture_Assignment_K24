@@ -30,10 +30,23 @@ binary_buffer:  .align 2	#Align the space to the word boundary (2^2 = 4 bytes)
 		.space 8	#The space is 8 bytes long,
 				#in order to store enough space for
 				#two 32-bit integers.
-				
-#Strings that are used for getting input from binary file
+#The buffer that is used to store the information before writing to OUTPUT.TXT
+output_buffer:	.align 2	#Align the space to the word boundary (2^2 = 4 bytes)
+				#So that the address of the file byte is
+				#divisible by 4, allowing
+				#load word from the space.
+		.space 8	#The space is 8 bytes long,
+				#in order to store enough space for
+				#two 32-bit integers.			
+#String for getting input from binary file
 filename: .asciiz "INT2.BIN"	#Name of the file that will be read
 
+#String for printing output
+output: .asciiz "OUTPUT.TXT"
+
+#String for opening or reading file
+file_error: .asciiz "Error when opening/reading file. Program exit..."
+file_success: .asciiz "Write into file OUTPUT.TXT successfully. Program exit..."
 #Strings that provide information about the values of multiplicand and multiplier from binary file
 multiplicand_input_information: .asciiz "The multiplicand from binary file is: "
 multiplier_input_information: .asciiz "The multiplier from binary file is: "
@@ -309,9 +322,10 @@ add_return_sign:
 
 #================================================================================
 #Final steps.
-#Description: It includes printing out the lower part and higher part of the function.
+#Description: Print out the lower part and higher part of the function.
 #Also store the 64 bit result into s0 and s1 register (because the $v0 containing
 #the higher part is used for syscall.
+#Then, store the result in a txt file.
 #Finally, exit from the program. 
 #================================================================================
 _exit:
@@ -363,11 +377,112 @@ _exit:
 	syscall		
 	move $a0 $s1		#Move s1 to a0 to print out the lower part
 	syscall
+	
+#=====================================================================================
+#Store result in text file
+#=====================================================================================
+	#Open or create file
+	li $v0 13		#Syscall 13 to open/ create file
+	la $a0 output		#Load the name of the output file into $a0
+	li $a1 1		#$a1 is set to 1 for writing mode
+	syscall 
+	move $s2 $v0		#Move the file description from $v0 to $s2
+	
+	#Check file status
+	bltz $v0 _file_error_handler	#If the value of $v0 is less than 0, it means that
+					#an error happens in opening or reading file.
+					#Branch to the file error handler
+	
+	#Enter the write file function
+	move $a0 $s0		#Move the higher part of result into $a0
+	move $a1 $s1		#Move the lower part of result into $a1
+	jal write_file		#Enter the write_file function
+	
+	#Write from buffer to file
+	sb $zero 0($t1)		#Add a null-terminator symbol into the end of buffer
+	li $v0 15		#Syscall 15 to write into file
+	move $a0 $s2		#Move the file descriptor into $a0
+	la $a1 output_buffer		#Move the address of buffer that we want to write from
+				#into $a1
+	li $a2 17		#Set the number of bytes that we want to write to 17
+				#(16 bytes of symbols, 1 byte of null-terminator symbol)
+	syscall
+	
+	#Close the file
+	li $v0 16		#Syscall 16 to close file
+	move $a0 $s2		#Move the file descriptor to $a0
+	syscall			#Close the file with description in $a0
+	
+	#Begin a new line
+	la $a0 new_line
+	li $v0 4
+	syscall
+	
+	#Print out file write sucessfully
+	la $a0 file_success
+	li $v0 4
+	syscall
+	j _program_termination	#Terminate the program after closing the file
+		
+#*******************Handle the error in opening or reading files*********************#
+_file_error_handler:
+	la $a0 file_error
+	li $v0 4
+	syscall
+	j _program_termination
+#*********************write_file function here***************************************#
+#Additional information: We need to convert the information in both registers into
+#ASCII code before writing into the file. This function is is used to convert the result
+#into ASCII code, and then store it in the output buffer to be ready for writing.
+write_file:
+	#Initialize before going into the loop
+	li $t9 0		#$t9 is used as the loop counter
+	la $t1 output_buffer	#$t1 stores the address of the buffer contains the value.
+	
+#Loop starts here
+_write_loop:
+	#Take out the first symbol
+	addi $t9 $t9 1		#Increment the loop counter
+	srl $t2 $a0 28		#Take 4 highest bits
+	sll $a0 $a0 4		#Shift left 4 bits to remove the 4 highest bit
+	andi $t2 $t2 0xF	#and with 1111 to make sure we only take 4 bits
+	
+	#Change the symbol into ASCII
+	blt $t2 10 _digit_transform	#If the current value of 4 bits is less than 10,
+					#convert it using _digit_transform
+	j _char_transform		#Else, convert it using _char_transform
 
+#Used to store the current symbol into the buffer
+_store_char:
+	sb $t2 0($t1)		#Store one symbol in the address in $t1
+	addi $t1 $t1 1		#Incerase $t1 to increase the location in the buffer
+	beq $t9 8 _swap		#If the number of loops equals to 8, it means that 
+				#the upper part is all inserted in the buffer. Then
+				#we go to _swap thread to start store the lower part.
+	blt $t9 16 _write_loop	#If the number of loops is less than 8, continue the loop
+	jr $ra			#Else, return back from the function
+	
+#Handle the less than 10 case
+_digit_transform:
+	addi $t2 $t2 48		#Turn into number in ASCII
+	j _store_char		#Go back to store the character
+	
+#Handle the equal or more than 10 case
+_char_transform:
+	addi $t2 $t2 87
+	j _store_char
+
+#Move the value of $a1 into $a0 to continue
+_swap:
+	move $a0 $a1
+	j _write_loop
+#=====================================================================================
+#Terminate the program
+#=====================================================================================
+_program_termination:
 	#Syscall 10 to terminate execution
 	li $v0 10		#Set the v0 register to 10 to set up for exit syscall
 	syscall			#Call the syscall to terminate execution
-
 #=====================================================================================
 #
 #
