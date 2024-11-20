@@ -1,10 +1,28 @@
-##########################################################
+#=========================================================================================
+# Program: Multiplication Algorithm Implementation
+# Description: This program implement the multiplication
+#	algorithm between 2 signed 32 bit integers.
+#	The input is read from a binary file called 
+#	INT2.BIN.
+#References: The algorithm is taken from figure 3.4 and 3.5
+#	of textbook: Computer Organization and Design - 4th
+#	edition, David A.Patterson & John L.Hennessy.
+# Class: L10.
+# Group: 10.
+# Authors: Nguyen Vo Duc Son, Pham Duy Quy, Nguyen Lam.
+# Date: 20/11/2024.
+#=========================================================================================
+
+#=========================================================================================
+#
+#
 #DATA DEFINITION
-##########################################################
-.data
-#Necessary data goes here
-##########################################################
-#Below is the buffer that is used to store the information from binary file INT2.BIN
+#
+#
+#=========================================================================================
+.data				#Necessary data goes here
+#-----------------------------------------------------------------------------------------
+#The buffer that is used to store the information from binary file INT2.BIN
 binary_buffer:  .align 2	#Align the space to the word boundary (2^2 = 4 bytes)
 				#So that the address of the file byte is
 				#divisible by 4, allowing
@@ -12,72 +30,59 @@ binary_buffer:  .align 2	#Align the space to the word boundary (2^2 = 4 bytes)
 		.space 8	#The space is 8 bytes long,
 				#in order to store enough space for
 				#two 32-bit integers.
-
-#Below are strings that are used for getting input from binary file
+				
+#Strings that are used for getting input from binary file
 filename: .asciiz "INT2.BIN"	#Name of the file that will be read
 
-#Below are strings that are used for printing information.
-
-#Thse are strings that provide information about the values of multiplicand and multiplier from binary file
+#Strings that provide information about the values of multiplicand and multiplier from binary file
 multiplicand_input_information: .asciiz "The multiplicand from binary file is: "
 multiplier_input_information: .asciiz "The multiplier from binary file is: "
-
-#These are only temporary: As we will not get input from keyboard but from binary file
-multiplicand_input_notification: .asciiz "Type in the multiplicand: "	#Multiplicand input notification
-multiplier_input_notification: .asciiz "Type in the multiplier: "	#Multiplier input notification
 
 #New line character
 new_line: .asciiz "\n"
 
-#These strings are used to provide information when printing out the result
+#Strings that are used to provide information when printing out the result
 lower_part_result: .asciiz "The lower part of the result is: "
 higher_part_result: .asciiz "The higher part of the result is: "
 binary_result: .asciiz "Result in binary: "
 hexa_result: .asciiz "Result in hexadecimal: "
-###########################################################
-######			###			###########
-#START			THE 			PROGRAM  ##
-######			###			###########
-###########################################################
-
-.text
-.globl main
+#==========================Registers======================================================
+#$t0: Loop time
+#$t2: Sign of result
+#$a1: Multiplicand
+#$a0: Upper part of multiplicand (Sign-Extended initially)
+#$a2: Multiplier
+#$v0: Upper part of the result after returning from the function
+#$v1: Lower part of the result after returning from the function
+#$t5: Carry bit, used to handle overflow happens in lower part addition
+#$s0 and $s1: Two parts of the result. They are used because $v0 is used for syscall after
+#	returning from the function
+#=========================================================================================
+#
+#
+#Main function
+#
+#
+#=========================================================================================
+.text				#The main code
+.globl main			#The main function starts here
+#-----------------------------------------------------------------------------------------
 main:
-##########################################################
-	#Additional information:
-		#t0 is used to count the loop time (when applying the multiplication algorithm)
-		#in the multiplication function.
-		
-		#t2 is used to store the sign of the result.
-		
-		#Because the input is 32 bit but it is extended to 64 bit, the a1 is used as the multiplicand parameter,
-		#then it is extended to 64 bit by connecting with a0 register.
-		
-		#The a2 register is used as the multiplier.
-		
-		#Because the final result is 64 bits, we use v0 as the MSB and v1 as the LSB
-		
-		#t5 is used as the carry bit when an overflow occurs in lower part
-		
-		#The result after returning from the function is in v0 and v1 (higher and lower part respectively).
-		#However, for using syscall, we move it to s0 and s1 respectively to store the result
-##########################################################
-#Read input then move the values into a1 and a2,
-#the parameters for the function
-##########################################################
-#Get input from binary file INT2.BIN
-###############################
+#***********************Read input from binary file**************************************#
+#--------------------------------------
+#1. Get input from binary file INT2.BIN
+#--------------------------------------
 #Open file INT2.BIN
-	li $v0 13	#Syscall 13 to open file.
-	la $a0 filename	#a0 stores the name of the binary file
-	li $a1 0	#Set the open file mode to: Read only
-	li $a2 0	#Set the flag to: Normal
-	syscall		#After syscall, the file descriptor is stored in v0 register
-	move $s2 $v0	#Move the file descriptor from v0 to s2 (This is used to
-			#close the file later
-#End of open file INT2.BIN
-################################
-#Read 8 bytes from the file
+	li $v0 13		#Syscall 13 to open file.
+	la $a0 filename		#a0 stores the name of the binary file
+	li $a1 0		#Set the open file mode to: Read only
+	li $a2 0		#Set the flag to: Normal
+	syscall			#After syscall, the file descriptor is stored in v0 register
+	move $s2 $v0		#Move the file descriptor from v0 to s2 (This is used to
+				#close the file later)
+#--------------------------------------
+#2. Read 8 bytes from the file
+#--------------------------------------
 	li $v0 14		#Syscall 14 to read from file	
 	move $a0 $s2		#a0 stores the file descriptor
 				#of the file we are going to read
@@ -86,28 +91,28 @@ main:
 	la $a2 8		#a2 stores the number of bytes we are
 				#going to read
 	syscall			#8 bytes are read and stored in binary_buffer
-#End of read file to space
-#################################
-#Close binary file INT2.BIN
+#--------------------------------------
+#3. Close binary file INT2.BIN
+#--------------------------------------
 li $v0 16			#Syscall 16 to close the file
 move $a0 $s2 			#a0 stores the file descriptor of closed file
 syscall
-#End of closing binary file INT2.BIN
-#################################
-#Assign the values from space into registers
-	la $t3 binary_buffer 	#t3 stores the array the information is in
-	lw $a1 0($t3)		#Store the first number (multiplicand also)
+#------------------------------------------------------
+#4. Assign the values from space to parameter registers
+#------------------------------------------------------
+	la $t3 binary_buffer 	#t3 stores the address of the array the information is in
+	lw $a1 0($t3)		#Store the first word (multiplicand also)
 				#into the first parameter a1
-	lw $a2 4($t3)		#Store the second number (multiplier also)
+	lw $a2 4($t3)		#Store the second word (multiplier also)
 				#into the second parameter a2
-#End of assigning value into registers
-##################################
-#Print out the values of multiplicand and multiplier
+#------------------------------------------------------
+#5. Print out values of multiplicand and multiplier
+#------------------------------------------------------
 	#Print out the multiplicand information
-	la $a0 multiplicand_input_information	#Load multiplicand information
-	li $v0 4
+	la $a0 multiplicand_input_information	#Load multiplicand information string
+	li $v0 4				#Syscall 4 to print string
 	syscall
-	move $a0 $a1		#a0 stores the printed integer
+	move $a0 $a1		#a0 stores the multiplicand
 	li $v0 1		#Syscall 1 to print integer
 	syscall
 	
@@ -117,119 +122,118 @@ syscall
 	syscall
 	
 	#Print out the multiplier information
-	la $a0 multiplier_input_information
-	li $v0 4
+	la $a0 multiplier_input_information	#Load multiplier information string
+	li $v0 4				#Syscall 4 to print string
 	syscall
 	
-	move $a0 $a2
-	li $v0 1
+	move $a0 $a2		#a0 stores the multiplier
+	li $v0 1		#Syscall 1 to print integer
 	syscall
 	
 	#Begin a new line
 	la $a0 new_line
 	li $v0 4
 	syscall
-#End of values printing
-#################################
-#End of binary file from INT2.BIN
-##########################################################
-	###################################################
-	#SET SOME INITIAL STATES BEFORE CALLING THE FUNCTION
-	###################################################
-	li $a0 0 			#As the multiplicand is 32 bit initially, we assume 
-					#that the upper 32 bit is 0, no matter
-					#what the sign of the multiplicand is.
-					#Also reset a0 after syscall
-	li $s2 0		
-	########################################################
-	#Store the old value of s registers into stack (If used)
-	#Or load inital value for some registers
-	li $t2 0			#Set the initial value for sign indicator register
+#***********************End of reading input from binary file**************************************#
+#***********************Set initial states*********************************************************#
+	li $a0 0 			#We sign change any negative numbers into positive, so
+					#a0 will always be 0 no matter what the sign of the
+					#multiplicand is.
+					#This is also used to reset a0 to 0 after using it for
+					#Syscall
+					
+	li $s2 0			#Reset $s2 to 0 after using it for storing file descriptor
+	
 	li $v0 0			#Reset after syscall
-	li $t3 0
-	########################################################
+
+	li $t2 0			#Set the initial value for sign indicator register
+	
+	li $t3 0			#Reset $t3 to 0 after using it for storing space addrress
+#***********************End of setting initial states*********************************************#
+#************************************Other********************************************************#
 	#Call and jump to the function
 	jal multiplication
-	#######################################################
+	
 	#After returning back from the function, jump to exit to terminate the program
-	j exit
-##################################
+	j _exit
+#=========================================================================================
 #The main multiplication function
-##################################
+#=========================================================================================
 multiplication:
-#######################################
+#************************************Edge case check*********************************************#
 #Before enter: check edge case: either multiplicand or multiplier equals to 0
 	#Branch to the handler if multiplicand or 
 	#multiplier equals to 0 
-	beq $a1 0 zero_operand_handler
-	beq $a2 0 zero_operand_handler
+	beq $a1 0 _zero_operand_handler
+	beq $a2 0 _zero_operand_handler
 	
 	#If not, continue to check the sign 
 	#of 2 operands 
-	j a1_sign_check	
+	j _multiplicand_sign_check
 
-##########################
-#Handle the zero edge case
-zero_operand_handler:
+#Edge case handler
+_zero_operand_handler:
 	#Load both v0 and v1 to zero
 	li $v0 0
 	li $v1 0
 	
 	#Immediately return and go 
 	#out of the function
-	j function_return
+	j _return
 #End of zero edge case handler
-##########################
 
-#End of edge case check
-#######################################
-#Check the sign of two numbers
-#Description: Use t2 resgister as an sign indicator. If t2 equals to 1, it indicates that the sign is changed 
-a1_sign_check:
-	blt $a1 $zero a1_sign_change	#Check if multiplicand is less than zero
-					#If true, branch to the tag to change its sign
-	j a2_sign_check			#If false, check the sign of multiplier
-a2_sign_check:
-	blt $a2 $zero a2_sign_change
-	j multiplication_cont
-########################################
-a1_sign_change:				
-	subu $a1 $zero $a1 		#Assign a1 with 0 - a1 to change the sign
-	xori $t2 1			#Use xori to change t2, indicating that the sign is changed. This is equal to NOT
-	j a2_sign_check			#Go back to check the sign of multiplier
-#The tag to check sign of a1
-a2_sign_change:
-	subu $a2 $zero $a2		#Assign a2 with 0 - a2 to change the sign
-	xori $t2 1			#Use xori to change t2, indicating that the sign is changed. This is equal to NOT
-	j multiplication_cont		#Go back to check the a1's sign
-########################################
-#End of checking sign
-#########################################
-#Continue multiplication
+#*******************************End of edge case check******************************************#
 
-multiplication_cont:
-
-#########################################
-#After check sign, crreate a loop to implement multiplication algorithm
-
-	li $t0 0 			#Initialize t0 to start counting
+#------------------------------------------------------------------------------------------------
+#1. Check the sign of two numbers
+#Description: Use t2 resgister as an sign indicator. If t2 equals to 1, it indicates that the 
+#sign is changed
+#------------------------------------------------------------------------------------------------
+_multiplicand_sign_check:
+	blt $a1 $zero _multiplicand_sign_change		#Check if multiplicand is less than zero.
+							#If true, branch to the tag to change 
+							#its sign.
+	j _multiplier_sign_check			#If false, check the sign of multiplier.
 	
-########################################
-#LOOP START
-########################################
-loop:
+_multiplier_sign_check:					#Check if multiplicand is less than zero
+	blt $a2 $zero _multiplier_sign_change		#If true, branch to the tag to change .
+	j _multiplication_continue			#If false, continue the function.
+
+_multiplicand_sign_change:				
+	subu $a1 $zero $a1 				#Assign a1 with 0 - a1 to change the sign
+	xori $t2 1					#Use xori to change t2, indicating that the
+							#sign is changed. This is equal to NOT.
+	j _multiplier_sign_check			#Go back to check the sign of multiplier
+
+_multiplier_sign_change:
+	subu $a2 $zero $a2				#Assign a2 with 0 - a2 to change the sign.
+	xori $t2 1					#Use xori to change t2, indicating that the 
+							#sign is changed. This is equal to NOT.
+	j _multiplication_continue			#Go back to check the a1's sign
+	
+#------------------------------------------------------------------------------------------------
+#2. Continue the multiplication after checking sign
+#------------------------------------------------------------------------------------------------
+_multiplication_continue:
+#Create a loop to implement multiplication algorithm
+	li $t0 0 			#Initialize t0 to start counting
+
+#=========================================================================================
+#Loop to calculate the product
+#=========================================================================================
+_loop:
 	addi $t0 $t0 1			#Increse loop count
 	andi $t1 $a2 1			#Store the rightmost bit in multiplier in t1
 	beq $t1 1 increase_product	#if t1 equals to 1, get to increase_product tag to add multiplicand to product
 
-#########################################
+#-------------------------------------------------------
 #Continue the loop after branching from increase_product
+#-------------------------------------------------------
 continue:		
-########################################
-#Shift left the 64 bit multiplicand
-	
-	#Store the leftmost bit of lower part in t6
-	srl $t6 $a1 31
+#-------------------------------------------------------
+#Bit shift for multiplicand and multiplier
+
+	srl $t6 $a1 31			#Store the leftmost bit of lower part in t6
 	andi $t6 $t6 1 			#Make sure that we only take one bit
 	
 	#Shift left the lower part
@@ -244,80 +248,80 @@ continue:
 	
 	#Shift right the multiplier
 	srl $a2 $a2 1
-#End of bit shift
-########################################
-#Loop check
-
-	bne $t0 32 loop				#If not 32nd repetitition, continue
-	j multiplication_cont_return		#Else break the loop to return value
 	
-#End of loop check
-########################################
-#BEGIN: Increase the product by adding the product with the current multiplicand.
-########################################
+#-------------------------------------------------------
+#Loop condition check
+
+	bne $t0 32 _loop		#If not 32nd repetitition, continue
+	j _check_return_sign		#Else break the loop to return value
+	
+#--------------------------------------------------------------------------------
+#Increase the product by adding the product with the current multiplicand.
+#--------------------------------------------------------------------------------
 increase_product:
-#Add the lower part of multiplicand ($a1) to the lower part of product ($v1) 
+	#Add the lower part of multiplicand ($a1) to the lower part of product ($v1) 
 	addu $v1 $v1 $a1
 	
-#t9 register is used as the carry bit. When using addu, if an overflow occurs,
-#the current value will be lower than either of the operands. Then we assign
-#the carry bit with 1
+	#t9 register is used as the carry bit. When using addu, if an overflow occurs,
+	#the current value will be lower than either of the operands. Then we assign
+	#the carry bit with 1
 	sltu $t9 $v1 $a1
 	
-#Add the carry bit to the higher part of the product first, then add the higher part
-#of the multiplicand
+	#Add the carry bit to the higher part of the product first, then add the higher part
+	#of the multiplicand
 	addu $v0 $v0 $t9
 	addu $v0 $v0 $a0
 
-#Jump back to the loop after adding
+	#Jump back to the loop after adding
 	j continue
-	
-#END OF PRODUCT ADDITION
-########################################
-#Return after loop end
+#=========================================================================================
+#End of loop
+#=========================================================================================
 
-multiplication_cont_return:
+	
+#-------------------------------------------------------
+#Check the sign bit to determine the sign of the product
+_check_return_sign:
 
 	#If the sign bit (t2) is equals to 1, add the sign back
-	#to the result
+	#to the result before returning
 	bne $t2 $zero add_return_sign
-	
-function_return:
+
+#-------------------------------------------------------
+#Return from the function
+_return:
+
 	#Return the result in v0 and v1 and go out of the function
 	jr $ra
 	
-#End of return
-########################################
+#-------------------------------------------------
 #Add the sign back after changing at the beginning
 add_return_sign:
 
-	#If 
-	#subu $v1 $zero $v1
-	# ??o d?u 64-bit
-	not $v0, $v0         # Bù 1 ph?n cao
-	not $v1, $v1         # Bù 1 ph?n th?p
-	addiu $v1, $v1, 1    # C?ng 1 vào ph?n th?p
-	sltu $t9, $v1, $zero # Ki?m tra carry (n?u $v1 = 0 sau khi c?ng)
-	addu $v0, $v0, $t9   # C?ng carry vào ph?n cao
+	not $v0, $v0         # 1s complement of upper part
+	not $v1, $v1         # 1s complement of lower part
+	addiu $v1, $v1, 1    # add 1 to change lower part to 2s complement
+	sltu $t9, $v1, $zero # Overflow check using $jt9
+	addu $v0, $v0, $t9   # Add carry into upper part
+	
 	#Jump back to the function to return
-	j function_return
+	j _return
 
-#End of return sign function
-#######################################
-#Final steps, including print out the lower part and higher part of the function.
-
+#================================================================================
+#Final steps.
+#Description: It includes printing out the lower part and higher part of the function.
 #Also store the 64 bit result into s0 and s1 register (because the $v0 containing
-#the high part is used for syscall.
-
+#the higher part is used for syscall.
 #Finally, exit from the program. 
-exit:
+#================================================================================
+_exit:
 	#Move the 64 bit result into s0 and s1 registers.
 	move $s0 $v0		#The higher part is stored in s0
 	move $s1 $v1		#The lower part is stored in s1
 	
 	#Print out the lower part in decimal
-	la $a0 lower_part_result
-	li $v0 4
+	la $a0 lower_part_result	#Load string address into a0
+	li $v0 4		#Syscall 4 to print string
 	syscall
 	li $v0 1		#Set v0 as 1 for printing integers (signed)
 	move $a0 $s1		#Move the lower part of result into a0
@@ -327,8 +331,8 @@ exit:
 	syscall
 	
 	#Print out the higher part in decimal 
-	la $a0 higher_part_result
-	li $v0 4
+	la $a0 higher_part_result	#Load string address into a0
+	li $v0 4		#Syscall 4 to print string
 	syscall
 	li $v0 1		#Set v0 as 1 for printing integers (signed)
 	move $a0 $s0		#Move the upper part of result into a0
@@ -338,8 +342,8 @@ exit:
 	syscall
 	
 	#Print out the result in binary form
-	la $a0 binary_result	
-	li $v0 4
+	la $a0 binary_result	#Load string address into a0
+	li $v0 4		#Syscall 4 to print string
 	syscall
 	li $v0 35		#Syscall 35 to print the result in binary
 	move $a0 $s0		#move s0 to a0 to print out the higher part 
@@ -351,8 +355,8 @@ exit:
 	syscall
 	
 	#Print out the result in hexadecimal form
-	la $a0 hexa_result
-	li $v0 4
+	la $a0 hexa_result	#Load string address into a0
+	li $v0 4		#Syscall 4 to print out a string
 	syscall
 	li $v0 34		#Syscall 34 to print out the result in hexedecimal
 	move $a0 $s0		#Move s0 to a0 to print out the higher part
@@ -364,11 +368,12 @@ exit:
 	li $v0 10		#Set the v0 register to 10 to set up for exit syscall
 	syscall			#Call the syscall to terminate execution
 
-#End of exit
-############################################################
-####			##			############
-#END			OF			PROGRAM  ###
-####			##			############
-############################################################
+#=====================================================================================
+#
+#
+#END OF PROGRAM
+#
+#
+#=====================================================================================
 
 	
