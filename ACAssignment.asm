@@ -1,6 +1,6 @@
 #=========================================================================================
 # Program: Multiplication Algorithm Implementation
-# Description: This program implement the multiplication
+# Description: This program implements the multiplication
 #	algorithm between 2 signed 32 bit integers.
 #	The input is read from a binary file called 
 #	INT2.BIN.
@@ -298,7 +298,7 @@ _check_return_sign:
 
 	#If the sign bit (t2) is equals to 1, add the sign back
 	#to the result before returning
-	bne $t2 $zero add_return_sign
+	bne $t2 $zero _add_return_sign
 
 #-------------------------------------------------------
 #Return from the function
@@ -309,7 +309,7 @@ _return:
 	
 #-------------------------------------------------
 #Add the sign back after changing at the beginning
-add_return_sign:
+_add_return_sign:
 
 	not $v0, $v0         # 1s complement of upper part
 	not $v1, $v1         # 1s complement of lower part
