@@ -91,13 +91,13 @@ main:
 	li $a1 0		#Set the open file mode to: Read only
 	li $a2 0		#Set the flag to: Normal
 	syscall			#After syscall, the file descriptor is stored in v0 register
-	move $s2 $v0		#Move the file descriptor from v0 to s2 (This is used to
+	add $s2 $v0 $zero	#Move the file descriptor from v0 to s2 (This is used to
 				#close the file later)
 #--------------------------------------
 #2. Read 8 bytes from the file
 #--------------------------------------
 	li $v0 14		#Syscall 14 to read from file	
-	move $a0 $s2		#a0 stores the file descriptor
+	add $a0 $s2 $zero	#a0 stores the file descriptor
 				#of the file we are going to read
 	la $a1 binary_buffer	#a1 stores the space we store the information
 				#that is read from file
@@ -107,9 +107,9 @@ main:
 #--------------------------------------
 #3. Close binary file INT2.BIN
 #--------------------------------------
-li $v0 16			#Syscall 16 to close the file
-move $a0 $s2 			#a0 stores the file descriptor of closed file
-syscall
+	li $v0 16		#Syscall 16 to close the file
+	add $a0 $s2 $zero	#a0 stores the file descriptor of closed file
+	syscall
 #------------------------------------------------------
 #4. Assign the values from space to parameter registers
 #------------------------------------------------------
@@ -125,7 +125,7 @@ syscall
 	la $a0 multiplicand_input_information	#Load multiplicand information string
 	li $v0 4				#Syscall 4 to print string
 	syscall
-	move $a0 $a1		#a0 stores the multiplicand
+	add $a0 $a1 $zero	#a0 stores the multiplicand
 	li $v0 1		#Syscall 1 to print integer
 	syscall
 	
