@@ -14,10 +14,6 @@ This repository includes:
 
 - binary_file_input.cpp and binary_file_output.cpp: Two C++ files that are used to write the values into INT2.BIN and read the information in INT2.BIN.
 
-- test.asm, test2.asm, test3.asm: Only the test files, used to test new features.
-
-- backup.asm: The backup file.
-
 - Mars45.jar: The executable .jar file used to run MARS.
 
 - MK.Computer.Organization.and.Design.4th.Edition.Oct.2011.pdf: The textbook in PDF format.
