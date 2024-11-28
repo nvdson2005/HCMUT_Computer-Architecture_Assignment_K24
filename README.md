@@ -18,8 +18,6 @@ This repository includes:
 
 - MK.Computer.Organization.and.Design.4th.Edition.Oct.2011.pdf: The textbook in PDF format.
   
-# Todo
-
 # References
 
 Textbook: Computer Organization and Design (4th Edition).
